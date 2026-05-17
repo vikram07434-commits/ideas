@@ -1,0 +1,5 @@
+- [Personal Creative Space](personal-creative-space.md) — Ideas folder is a free sandbox, no SAP rules, full access
+- [Developer Profile](user-developer-profile.md) — SAP dev by day, builds agents/apps as personal projects
+- [GitHub Personal](github-personal.md) — Use github.com (not github.tools.sap) for this workspace
+- [Three Projects](three-projects-overview.md) — Stream (AI movies), AI Pulse (content discovery), Smart Invest (Playwright automation)
+- [Smart Invest Bible](smart-invest-bible.md) — RISK-PROTOCOLS.md is absolute law, research like a 30yr expert, zero tolerance for loss
