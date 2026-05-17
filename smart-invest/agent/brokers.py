@@ -202,6 +202,7 @@ class CoinDCXBroker(BrokerBase):
 
         try:
             resp = requests.post(f"{self.BASE_URL}/exchange/v1/users/balances", headers=headers, data=payload)
+
             balances = resp.json()
             inr_balance = next((b for b in balances if b["currency"] == "INR"), None)
             return float(inr_balance["balance"]) if inr_balance else 0.0

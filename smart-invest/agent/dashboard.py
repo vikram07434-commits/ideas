@@ -4,13 +4,15 @@ Simple Flask app showing portfolio status, P&L, positions, signals.
 Runs locally at http://localhost:5050
 """
 
-from flask import Flask, render_template_string, jsonify
+from flask import Flask, render_template_string, jsonify, request
 from datetime import datetime
+import os
 
 app = Flask(__name__)
 
 # Will be injected by main.py when starting
 agent_instance = None
+DASHBOARD_SECRET = os.getenv("DASHBOARD_SECRET", "change-me-in-env")
 
 DASHBOARD_HTML = """
 <!DOCTYPE html>
@@ -164,6 +166,9 @@ def api_positions():
 def api_kill():
     if agent_instance is None:
         return jsonify({"error": "agent not running"}), 503
+    token = request.headers.get("Authorization", "").replace("Bearer ", "")
+    if token != DASHBOARD_SECRET:
+        return jsonify({"error": "unauthorized"}), 401
     agent_instance.risk_engine._trigger_kill_switch()
     return jsonify({"status": "killed"})
 
@@ -171,4 +176,4 @@ def api_kill():
 def start_dashboard(agent, port: int = 5050):
     global agent_instance
     agent_instance = agent
-    app.run(host="0.0.0.0", port=port, debug=False)
+    app.run(host="127.0.0.1", port=port, debug=False)

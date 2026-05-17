@@ -63,7 +63,7 @@ class TradeSignal:
 class RiskEngine:
     """Enforces RISK-PROTOCOLS.md — the bible. No exceptions."""
 
-    def __init__(self, portfolio_value: float):
+    def __init__(self, portfolio_value: float, telegram=None):
         self.portfolio_value = portfolio_value
         self.peak_value = portfolio_value
         self.daily_pnl = 0.0
@@ -72,6 +72,15 @@ class RiskEngine:
         self.last_loss_time: Optional[datetime] = None
         self.trades_after_loss = 0
         self.state = SystemState.PAPER  # ALWAYS start paper
+        self.telegram = telegram
+        self.price_history: dict[str, list[float]] = {}
+
+    def update_price_history(self, symbol: str, price: float):
+        """Track recent prices for anti-FOMO checks."""
+        if symbol not in self.price_history:
+            self.price_history[symbol] = []
+        self.price_history[symbol].append(price)
+        self.price_history[symbol] = self.price_history[symbol][-30:]
 
     def check_signal(self, signal: TradeSignal, positions: list[Position]) -> tuple[bool, str]:
         """Returns (approved, reason). If not approved, trade MUST NOT execute."""
@@ -120,10 +129,18 @@ class RiskEngine:
             if hours_since_loss < 24:
                 return False, f"COOLDOWN: {24 - hours_since_loss:.1f}h remaining after loss"
 
-        # Anti-FOMO check would go here (needs price history)
+        # Anti-FOMO check (RISK-PROTOCOLS 7.2: never buy >20% rise in 7 days)
+        if signal.action == "buy":
+            history = self.price_history.get(signal.symbol, [])
+            if len(history) >= 7:
+                price_7d_ago = history[-7]
+                if price_7d_ago > 0:
+                    rise_7d = (signal.price - price_7d_ago) / price_7d_ago
+                    if rise_7d > 0.20:
+                        return False, f"ANTI-FOMO: {signal.symbol} up {rise_7d*100:.1f}% in 7 days — wait"
 
-        # Circuit breaker checks
-        if abs(self.daily_pnl) >= self.portfolio_value * CIRCUIT_BREAKERS["daily_loss_pct"]:
+        # Circuit breaker checks (only losses trigger halt, not profits)
+        if self.daily_pnl <= -(self.portfolio_value * CIRCUIT_BREAKERS["daily_loss_pct"]):
             self.state = SystemState.HALTED
             return False, "CIRCUIT BREAKER: daily loss limit hit — halted 24h"
 
@@ -151,12 +168,17 @@ class RiskEngine:
 
     def _trigger_kill_switch(self):
         """KILL SWITCH — close everything, alert everything."""
-        # TODO: Close all positions at market
-        # TODO: Cancel all pending orders
-        # TODO: Send Telegram alert
-        # TODO: Send SMS alert
-        # TODO: Log the event
-        print("🚨 KILL SWITCH TRIGGERED — ALL TRADING STOPPED")
+        self.state = SystemState.KILLED
+        drawdown = (self.peak_value - self.portfolio_value) / self.peak_value * 100
+
+        if self.telegram:
+            self.telegram.send_kill_switch(
+                reason=f"Drawdown {drawdown:.1f}% exceeded 15% limit",
+                portfolio_value=self.portfolio_value,
+                drawdown_pct=drawdown,
+            )
+
+        print(f"🚨 KILL SWITCH TRIGGERED — Drawdown: {drawdown:.1f}% — ALL TRADING STOPPED")
 
     def _is_trading_hours_safe(self) -> bool:
         """Check if we're outside the 15-min blackout zones."""

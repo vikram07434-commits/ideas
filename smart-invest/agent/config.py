@@ -86,4 +86,4 @@ ALERTS = {
 # System
 ENVIRONMENT = "paper"  # Start in paper trading mode ALWAYS
 RECONCILIATION_INTERVAL_SEC = 300  # 5 minutes
-HEALTH_CHECK_INTERVAL_SEC = 60     # 1 minute
+HEALTH_CHECK_INTERVAL_SEC = 300    # 5 minutes (was 60 — too aggressive for free APIs)

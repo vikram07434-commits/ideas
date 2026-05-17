@@ -5,3 +5,4 @@ python-dotenv>=1.0.0
 flask>=3.0.0
 apscheduler>=3.10.0
 prometheus-client>=0.20.0
+# sqlite3 is built into Python — no install needed
