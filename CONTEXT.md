@@ -22,7 +22,9 @@ Each project lives in its own subfolder and is independently version-controlled.
 
 | Folder | Description | Status |
 |--------|-------------|--------|
-| *(none yet)* | | |
+| `stream/` | AI-powered movie making website | Research |
+| `ai-pulse/` | AI content discovery across Twitter/Reddit/Google — find best topics & people | Research |
+| `smart-invest/` | Investment automation with Playwright — every penny counts | Research |
 
 ---
 
